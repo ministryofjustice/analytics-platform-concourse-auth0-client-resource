@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+
+from moj_analytics.auth0_client import (
+    Auth0,
+    AuthorizationAPI,
+    Client,
+    Connection,
+    Group,
+    ManagementAPI,
+    Permission,
+    Role
+)
+from moj_analytics.concourse import Resource
+
+
+@Resource
+def create_client(src_dir, source={}, params={}):
+    auth0 = Auth0(
+        source['client-id'],
+        source['client-secret'],
+        source['domain'])
+
+    auth0.access(ManagementAPI(source['domain']))
+
+    app_url = 'https://{app-name}.{app-domain}'.format(**source)
+
+    print(f'Creating client {source["app-name"]} ...')
+
+    client = auth0.management.get_or_create(Client(
+        name=source['app-name'],
+        callbacks=[f'{app_url}/callback'],
+        allowed_origins=[app_url]))
+
+    client_id = client['client_id']
+
+    print('Setting email connection ...')
+
+    email = auth0.management.get(Connection(strategy='email'))
+    client.disable_all_connections(ignore=[email])
+
+    auth0.access(AuthorizationAPI(
+        source['authz-url'],
+        source['authz-audience']))
+
+    print('Creating view:app permission ...')
+
+    view_app = auth0.authorization.get_or_create(
+        Permission(name='view:app', applicationId=client_id))
+
+    print('Creating app-viewer role ...')
+
+    role = auth0.authorization.get_or_create(
+        Role(name='app-viewer', applicationId=client_id))
+    role.add_permission(view_app)
+
+    print('Creating app group ...')
+
+    group = auth0.authorization.get_or_create(Group(name=source['app-name']))
+    group.add_role(role)
+
+    print('Done')
+
+    return 'none', {}
+
+
+if __name__ == '__main__':
+    create_client()

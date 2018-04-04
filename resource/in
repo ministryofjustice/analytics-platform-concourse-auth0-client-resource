@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+
+import json
+import os
+
+from moj_analytics.auth0_client import (
+    Auth0,
+    Client,
+    ManagementAPI,
+)
+from moj_analytics.concourse import Resource
+
+
+@Resource
+def get_client(dest_dir, source={}, version=None, params={}):
+    auth0 = Auth0(
+        source['client-id'],
+        source['client-secret'],
+        source['domain'])
+
+    auth0.access(ManagementAPI(source['domain']))
+
+    print(f'Fetching client {source["app-name"]} details ...')
+
+    client = auth0.management.get(Client(name=source['app-name']))
+
+    with open(os.path.join(dest_dir, source['app-name']), 'w') as outfile:
+        json.dump(client, outfile)
+
+    print('Done')
+
+    return 'none', {}
+
+
+if __name__ == '__main__':
+    get_client()
