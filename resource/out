@@ -25,6 +25,7 @@ def create_client(src_dir, source={}, params={}):
     app_url = 'https://{app-name}.{app-domain}'.format(**source)
 
     print(f'Creating client {source["app-name"]} ...')
+    print(f'Callback URL {app_url}/callback')
 
     client = auth0.management.get_or_create(Client(
         name=source['app-name'],

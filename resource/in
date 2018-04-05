@@ -24,8 +24,17 @@ def get_client(dest_dir, source={}, version=None, params={}):
 
     client = auth0.management.get(Client(name=source['app-name']))
 
-    with open(os.path.join(dest_dir, source['app-name']), 'w') as outfile:
-        json.dump(client, outfile)
+    with open(os.path.join(dest_dir, 'credentials.yaml'), 'w') as outfile:
+        # JSON is a subset of YAML
+        json.dump({
+            'AuthProxy': {
+                'Auth0': {
+                    'ClientId': client['client_id'],
+                    'ClientSecret': client['client_secret'],
+                    'Domain': source['domain'],
+                },
+            },
+        }, outfile)
 
     print('Done')
 
