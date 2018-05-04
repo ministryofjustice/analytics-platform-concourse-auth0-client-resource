@@ -36,6 +36,10 @@ def get_client(dest_dir, source={}, version=None, params={}):
             },
         }, outfile)
 
+    for key in ['client_id', 'client_secret']:
+        with open(os.path.join(dest_dir, key), 'w') as f:
+            f.write(client[key])
+
     print('Done')
 
     return 'none', {}
