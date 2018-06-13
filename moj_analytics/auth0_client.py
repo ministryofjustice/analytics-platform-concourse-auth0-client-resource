@@ -80,7 +80,7 @@ class API(object):
         response = self.request('POST', endpoint, json=resource)
 
         if 'error' in response:
-            raise CreateResourceError(response.message)
+            raise CreateResourceError(response)
 
         return resource.__class__(self, response)
 
