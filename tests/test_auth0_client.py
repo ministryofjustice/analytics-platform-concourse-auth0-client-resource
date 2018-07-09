@@ -23,6 +23,16 @@ class TestAuth0Client(object):
 
     @pytest.mark.usefixtures(
         'given_valid_api_client_credentials',
+        'given_access_to_the_management_api',
+    )
+    def test_it_can_update_a_client(self, auth0):
+        client = auth0.management.get_or_create(Client(name='test-client'))
+        client.update(web_origins=['foo'])
+
+        assert client['web_origins'] == ['foo']
+
+    @pytest.mark.usefixtures(
+        'given_valid_api_client_credentials',
         'given_access_to_the_authorization_api',
         'given_a_permission_exists'
     )
