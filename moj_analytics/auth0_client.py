@@ -10,6 +10,10 @@ class CreateResourceError(Exception):
     pass
 
 
+class UpdateResourceError(Exception):
+    pass
+
+
 class Auth0(object):
 
     def __init__(self, client_id, client_secret, domain):
