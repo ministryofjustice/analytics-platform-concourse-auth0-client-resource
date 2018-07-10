@@ -10,6 +10,10 @@ class CreateResourceError(Exception):
     pass
 
 
+class UpdateResourceError(Exception):
+    pass
+
+
 class Auth0(object):
 
     def __init__(self, client_id, client_secret, domain):
@@ -84,6 +88,16 @@ class API(object):
 
         return resource.__class__(self, response)
 
+    def update(self, resource):
+        endpoint = '{}s'.format(resource.__class__.__name__.lower())
+
+        response = self.request('PATCH', endpoint, json=resource)
+
+        if 'error' in response:
+            raise UpdateResourceError(response.message)
+
+        return resource.__class__(self, response)
+
     def get_all(self, resource_class):
         endpoint = '{}s'.format(resource_class.__name__.lower())
 
@@ -127,6 +141,10 @@ class Resource(dict):
     def __init__(self, api=None, *args, **kwargs):
         super(Resource, self).__init__(*args, **kwargs)
         self.api = api
+
+    def update(self, **overrides):
+        super().update(overrides)
+        return self.api.update(self)
 
 
 class Client(Resource):

@@ -32,6 +32,8 @@ def create_client(src_dir, source={}, params={}):
         callbacks=[f'{app_url}/callback'],
         allowed_origins=[app_url]))
 
+    client.update(web_origins=[app_url])
+
     client_id = client['client_id']
 
     print('Setting email connection ...')

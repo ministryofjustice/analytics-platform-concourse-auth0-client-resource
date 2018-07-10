@@ -100,6 +100,10 @@ def given_access_to_the_management_api(auth0, config, responses):
         )
     ))
 
+    responses.add_callback('PATCH', endpoint, json_response(
+        lambda request: Client(**request.json)
+    ))
+
     responses.add_callback('GET', endpoint, json_response(lambda request: [
         Client(name='client1')
     ]))
