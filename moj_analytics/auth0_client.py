@@ -94,7 +94,7 @@ class API(object):
         response = self.request('PATCH', endpoint, json=resource)
 
         if 'error' in response:
-            raise UpdateResourceError(response.message)
+            raise UpdateResourceError(response)
 
         return resource.__class__(self, response)
 

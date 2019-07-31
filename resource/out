@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import json
 
 from moj_analytics.auth0_client import (
     Auth0,
@@ -32,14 +33,23 @@ def create_client(src_dir, source={}, params={}):
         callbacks=[f'{app_url}/callback'],
         allowed_origins=[app_url]))
 
-    client.update(web_origins=[app_url])
+    # TODO: This never worked, fix it
+    # client.update(web_origins=[app_url])
 
     client_id = client['client_id']
 
-    print('Setting email connection ...')
+    data = {}
+    with open('/tmp/build/put/webapp-source/deploy.json') as input:
+        print('Parsing deploy.json')
+        data = json.load(input)
 
-    email = auth0.management.get(Connection(strategy='email'))
-    client.disable_all_connections(ignore=[email])
+    connections = data.get('connections', ["email"])
+    print('Setting email connection ...')
+    auth0_connections = [auth0.management.get(Connection(name=connection))
+                         for connection in connections]
+    print('Connections: ' + ','.join(connections))
+
+    client.disable_all_connections(ignore=auth0_connections)
 
     auth0.access(AuthorizationAPI(
         source['authz-url'],
