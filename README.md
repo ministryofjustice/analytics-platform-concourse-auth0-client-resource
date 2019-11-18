@@ -1,3 +1,5 @@
+[![Docker Repository on Quay](https://quay.io/repository/mojanalytics/concourse-auth0-resource/status "Docker Repository on Quay")](https://quay.io/repository/mojanalytics/concourse-auth0-resource)
+
 # Auth0 Client Resource
 
 Provides a Concourse resource to get and create Auth0 Clients. Used to create a
