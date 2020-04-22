@@ -113,15 +113,33 @@ class API(object):
     def get(self, resource):
         resources = self.get_all(resource.__class__)
 
+        # DEBUG
+        print(f"DEBUG (ignore): len(resources) = {len(resources)}")
+
         for other in resources:
+            # DEBUG
+            if resource.__class__ == Permission:
+                print(f"DEBUG (ignore): dict(other.items()) = {dict(other.items())}")
 
             if all(pair in other.items() for pair in resource.items()):
                 return other
 
     def get_or_create(self, resource):
+        # DEBUG
+        if resource.__class__ == Permission:
+            print(f"DEBUG (ignore): resource = {resource}")
+
         result = self.get(resource)
 
+        # DEBUG
+        if result.__class__ == Permission:
+            print(f"DEBUG (ignore): result of get(resource) = {result}")
+
+        # DEBUG
+        print(f"DEBUG (ignore): result is None = {result is None}")
         if result is None:
+            # DEBUG
+            print(f"DEBUG (ignore): inside if result is None")
             result = self.create(resource)
 
         return result
