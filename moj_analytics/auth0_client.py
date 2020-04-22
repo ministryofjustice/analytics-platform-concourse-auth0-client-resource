@@ -73,6 +73,8 @@ class API(object):
             json=kwargs.get('json', {})
         )
 
+        response.raise_for_status()
+
         if response.text:
             return response.json()
 
