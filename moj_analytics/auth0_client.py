@@ -74,7 +74,8 @@ class API(object):
             base_url=self.base_url,
             endpoint=endpoint
         )
-        log.msg("Calling endpoint: {}".format(url))
+        log.msg("Calling endpoint.", url=url, base_url=self.base_url,
+                endpoint=endpoint, method=method)
 
         response = requests.request(
             method,
@@ -90,7 +91,9 @@ class API(object):
         try:
             response.raise_for_status()
         except Exception as ex:
-            log.msg("Auth0 API error.", exc_info=ex)
+            log.msg("Auth0 API error.", exc_info=ex, url=url,
+                    base_url=self.base_url, endpoint=endpoint, method=method,
+                    status=response.status_code, content=response.text)
             raise ex
 
         # No error? Good to go with the JSON payload.
