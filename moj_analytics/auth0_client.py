@@ -1,5 +1,16 @@
 from auth0.v3 import authentication, exceptions
 import requests
+import structlog
+
+
+structlog.configure(
+    processors=[
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.format_exc_info,
+        structlog.processors.JSONRenderer(),
+    ]
+)
+log = structlog.get_logger()
 
 
 class AccessTokenError(Exception):
@@ -34,7 +45,8 @@ class Auth0(object):
             )
 
         except exceptions.Auth0Error as error:
-
+            log.msg("Access token error.", exc_info=error,
+                    client_id=self.client_id, domain=self.domain)
             raise AccessTokenError(
                 error,
                 self.client_id,
@@ -62,6 +74,7 @@ class API(object):
             base_url=self.base_url,
             endpoint=endpoint
         )
+        log.msg("Calling endpoint: {}".format(url))
 
         response = requests.request(
             method,
@@ -73,11 +86,19 @@ class API(object):
             json=kwargs.get('json', {})
         )
 
-        response.raise_for_status()
+        # If there's an error, log it then re-raise.
+        try:
+            response.raise_for_status()
+        except Exception as ex:
+            log.msg("Auth0 API error.", exc_info=ex)
+            raise ex
 
+        # No error? Good to go with the JSON payload.
         if response.text:
             return response.json()
 
+        # Some responses don't have a JSON payload so return a false-y
+        # empty dictionary that won't cause undesirable side-effects.
         return {}
 
     def create(self, resource):
@@ -86,6 +107,7 @@ class API(object):
         response = self.request('POST', endpoint, json=resource)
 
         if 'error' in response:
+            log.msg("Error creating resource.", response=response)
             raise CreateResourceError(response)
 
         return resource.__class__(self, response)
@@ -96,6 +118,7 @@ class API(object):
         response = self.request('PATCH', endpoint, json=resource)
 
         if 'error' in response:
+            log.msg("Error updating resource.", response=response)
             raise UpdateResourceError(response)
 
         return resource.__class__(self, response)
@@ -113,33 +136,14 @@ class API(object):
     def get(self, resource):
         resources = self.get_all(resource.__class__)
 
-        # DEBUG
-        print(f"DEBUG (ignore): len(resources) = {len(resources)}")
-
         for other in resources:
-            # DEBUG
-            if resource.__class__ == Permission:
-                print(f"DEBUG (ignore): dict(other.items()) = {dict(other.items())}")
-
             if all(pair in other.items() for pair in resource.items()):
                 return other
 
     def get_or_create(self, resource):
-        # DEBUG
-        if resource.__class__ == Permission:
-            print(f"DEBUG (ignore): resource = {resource}")
-
         result = self.get(resource)
 
-        # DEBUG
-        if result.__class__ == Permission:
-            print(f"DEBUG (ignore): result of get(resource) = {result}")
-
-        # DEBUG
-        print(f"DEBUG (ignore): result is None = {result is None}")
         if result is None:
-            # DEBUG
-            print(f"DEBUG (ignore): inside if result is None")
             result = self.create(resource)
 
         return result
