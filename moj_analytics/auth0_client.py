@@ -1,5 +1,16 @@
 from auth0.v3 import authentication, exceptions
 import requests
+import structlog
+
+
+structlog.configure(
+    processors=[
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.format_exc_info,
+        structlog.processors.JSONRenderer(),
+    ]
+)
+log = structlog.get_logger()
 
 
 class AccessTokenError(Exception):
@@ -34,7 +45,8 @@ class Auth0(object):
             )
 
         except exceptions.Auth0Error as error:
-
+            log.msg("Access token error.", exc_info=error,
+                    client_id=self.client_id, domain=self.domain)
             raise AccessTokenError(
                 error,
                 self.client_id,
@@ -62,6 +74,8 @@ class API(object):
             base_url=self.base_url,
             endpoint=endpoint
         )
+        log.msg("Calling endpoint.", url=url, base_url=self.base_url,
+                endpoint=endpoint, method=method)
 
         response = requests.request(
             method,
@@ -73,9 +87,21 @@ class API(object):
             json=kwargs.get('json', {})
         )
 
+        # If there's an error, log it then re-raise.
+        try:
+            response.raise_for_status()
+        except Exception as ex:
+            log.msg("Auth0 API error.", exc_info=ex, url=url,
+                    base_url=self.base_url, endpoint=endpoint, method=method,
+                    status=response.status_code, content=response.text)
+            raise ex
+
+        # No error? Good to go with the JSON payload.
         if response.text:
             return response.json()
 
+        # Some responses don't have a JSON payload so return a false-y
+        # empty dictionary that won't cause undesirable side-effects.
         return {}
 
     def create(self, resource):
@@ -84,6 +110,7 @@ class API(object):
         response = self.request('POST', endpoint, json=resource)
 
         if 'error' in response:
+            log.msg("Error creating resource.", response=response)
             raise CreateResourceError(response)
 
         return resource.__class__(self, response)
@@ -94,6 +121,7 @@ class API(object):
         response = self.request('PATCH', endpoint, json=resource)
 
         if 'error' in response:
+            log.msg("Error updating resource.", response=response)
             raise UpdateResourceError(response)
 
         return resource.__class__(self, response)
@@ -112,7 +140,6 @@ class API(object):
         resources = self.get_all(resource.__class__)
 
         for other in resources:
-
             if all(pair in other.items() for pair in resource.items()):
                 return other
 
