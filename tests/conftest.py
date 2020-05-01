@@ -58,7 +58,8 @@ def json_response(data, status=200, headers={}):
 
         payload = data
         if callable(data):
-            request.json = json.loads(request.body.decode('utf-8'))
+            if request.body:
+                request.json = json.loads(request.body.decode('utf-8'))
             payload = data(request)
 
         return (status, headers, json.dumps(payload))

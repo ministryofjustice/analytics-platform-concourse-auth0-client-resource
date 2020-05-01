@@ -77,14 +77,21 @@ class API(object):
         log.msg("Calling endpoint.", url=url, base_url=self.base_url,
                 endpoint=endpoint, method=method)
 
-        response = requests.request(
-            method,
-            url,
-            headers={
+        request_args = {
+            "headers": {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer {}'.format(self.access_token),
             },
-            json=kwargs.get('json', {})
+        }
+
+        # Only send a payload with POST/PUT or API will respond with 5xx.
+        if method in ("POST", "PUT", "PATCH"):
+            request_args["json"] = kwargs.get("json", {})
+
+        response = requests.request(
+            method,
+            url,
+            **request_args
         )
 
         # If there's an error, log it then re-raise.
