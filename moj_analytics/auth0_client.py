@@ -77,14 +77,21 @@ class API(object):
         log.msg("Calling endpoint.", url=url, base_url=self.base_url,
                 endpoint=endpoint, method=method)
 
-        response = requests.request(
-            method,
-            url,
-            headers={
+        args = {
+            "headers": {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer {}'.format(self.access_token),
             },
-            json=kwargs.get('json', {})
+        }
+        # pass "{}" in a GET request appears to cause
+        # a `504 Gateway Timeout`
+        if method != "GET":
+            args["json"] = kwargs.get('json', {})
+
+        response = requests.request(
+            method,
+            url,
+            **args,
         )
 
         # If there's an error, log it then re-raise.
