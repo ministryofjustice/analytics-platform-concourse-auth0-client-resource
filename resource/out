@@ -9,7 +9,8 @@ from moj_analytics.auth0_client import (
     Group,
     ManagementAPI,
     Permission,
-    Role
+    Role,
+    log
 )
 from moj_analytics.concourse import Resource
 
@@ -25,8 +26,8 @@ def create_client(src_dir, source={}, params={}):
 
     app_url = 'https://{app-name}.{app-domain}'.format(**source)
 
-    print(f'Creating client {source["app-name"]} ...')
-    print(f'Callback URL {app_url}/callback')
+    log.msg("Creating client.", name=source["app-name"],
+            callback_url=f"{app_url}/callback")
 
     client = auth0.management.get_or_create(Client(
         name=source['app-name'],
@@ -40,14 +41,16 @@ def create_client(src_dir, source={}, params={}):
 
     data = {}
     with open('/tmp/build/put/webapp-source/deploy.json') as input:
-        print('Parsing deploy.json')
-        data = json.load(input)
+        try:
+            data = json.load(input)
+        except Exception as ex:
+            log.msg("Could not parse deploy.json", exc_info=ex)
+            raise ex
 
     connections = data.get('connections', ["email"])
-    print('Setting email connection ...')
     auth0_connections = [auth0.management.get(Connection(name=connection))
                          for connection in connections]
-    print('Connections: ' + ','.join(connections))
+    log.msg("Setting email connections.", connections=connections)
 
     client.disable_all_connections(ignore=auth0_connections)
 
@@ -55,23 +58,20 @@ def create_client(src_dir, source={}, params={}):
         source['authz-url'],
         source['authz-audience']))
 
-    print('Creating view:app permission ...')
-
+    log.msg("Creating permission.", name="view:app", application_id=client_id)
     view_app = auth0.authorization.get_or_create(
-        Permission(name='view:app', applicationId=client_id))
+        Permission(name='view:app', application_id=client_id))
 
-    print('Creating app-viewer role ...')
-
+    log.msg("Creating role.", name="app-viewer", application_id=client_id)
     role = auth0.authorization.get_or_create(
         Role(name='app-viewer', applicationId=client_id))
     role.add_permission(view_app)
 
-    print('Creating app group ...')
-
+    log.msg("Creating group.", name=source["app-name"])
     group = auth0.authorization.get_or_create(Group(name=source['app-name']))
     group.add_role(role)
 
-    print('Done')
+    log.msg("Done.")
 
     return 'none', {}
 
