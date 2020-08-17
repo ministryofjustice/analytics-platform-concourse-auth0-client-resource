@@ -25,6 +25,10 @@ class UpdateResourceError(Exception):
     pass
 
 
+class GetResourceError(Exception):
+    pass
+
+
 class Auth0(object):
 
     def __init__(self, client_id, client_secret, domain):
@@ -116,7 +120,7 @@ class API(object):
 
         response = self.request('POST', endpoint, json=resource)
 
-        if 'error' in response:
+        if 'error' in response or response == {}:
             log.msg("Error creating resource.", response=response)
             raise CreateResourceError(response)
 
@@ -127,7 +131,7 @@ class API(object):
 
         response = self.request('PATCH', endpoint, json=resource)
 
-        if 'error' in response:
+        if 'error' in response or response == {}:
             log.msg("Error updating resource.", response=response)
             raise UpdateResourceError(response)
 
@@ -137,6 +141,10 @@ class API(object):
         endpoint = '{}s'.format(resource_class.__name__.lower())
 
         resources = self.request('GET', endpoint)
+
+        if not resources:
+            log.msg("Error getting resource.", response=response)
+            raise GetResourceError(response)
 
         if endpoint in resources:
             resources = resources[endpoint]
