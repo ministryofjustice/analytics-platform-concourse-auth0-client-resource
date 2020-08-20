@@ -5,8 +5,8 @@ from moj_analytics.concourse import Resource
 
 @Resource
 def check(source={}, version=None):
-    return ['none']
+    return ["none"]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     check()
