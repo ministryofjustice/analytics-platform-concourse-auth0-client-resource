@@ -10,71 +10,73 @@ from moj_analytics.auth0_client import (
     ManagementAPI,
     Permission,
     Role,
-    log
+    log,
 )
 from moj_analytics.concourse import Resource
 
 
 @Resource
 def create_client(src_dir, source={}, params={}):
-    auth0 = Auth0(
-        source['client-id'],
-        source['client-secret'],
-        source['domain'])
+    auth0 = Auth0(source["client-id"], source["client-secret"], source["domain"])
 
-    auth0.access(ManagementAPI(source['domain']))
+    auth0.access(ManagementAPI(source["domain"]))
 
-    app_url = 'https://{app-name}.{app-domain}'.format(**source)
+    app_url = "https://{app-name}.{app-domain}".format(**source)
 
-    log.msg("Creating client.", name=source["app-name"],
-            callback_url=f"{app_url}/callback")
+    log.msg(
+        "Creating client.", name=source["app-name"], callback_url=f"{app_url}/callback"
+    )
 
-    client = auth0.management.get_or_create(Client(
-        name=source['app-name'],
-        callbacks=[f'{app_url}/callback'],
-        allowed_origins=[app_url]))
+    client = auth0.management.get_or_create(
+        Client(
+            name=source["app-name"],
+            callbacks=[f"{app_url}/callback"],
+            allowed_origins=[app_url],
+        )
+    )
 
     # TODO: This never worked, fix it
     # client.update(web_origins=[app_url])
 
-    client_id = client['client_id']
+    client_id = client["client_id"]
 
     data = {}
-    with open('/tmp/build/put/webapp-source/deploy.json') as input:
+    with open("/tmp/build/put/webapp-source/deploy.json") as input:
         try:
             data = json.load(input)
         except Exception as ex:
             log.msg("Could not parse deploy.json", exc_info=ex)
             raise ex
 
-    connections = data.get('connections', ["email"])
-    auth0_connections = [auth0.management.get(Connection(name=connection))
-                         for connection in connections]
+    connections = data.get("connections", ["email"])
+    auth0_connections = [
+        auth0.management.get(Connection(name=connection)) for connection in connections
+    ]
     log.msg("Setting email connections.", connections=connections)
 
     client.disable_all_connections(ignore=auth0_connections)
 
-    auth0.access(AuthorizationAPI(
-        source['authz-url'],
-        source['authz-audience']))
+    auth0.access(AuthorizationAPI(source["authz-url"], source["authz-audience"]))
 
     log.msg("Creating permission.", name="view:app", application_id=client_id)
     view_app = auth0.authorization.get_or_create(
-        Permission(name='view:app', application_id=client_id))
+        Permission(name="view:app", application_id=client_id)
+    )
 
     log.msg("Creating role.", name="app-viewer", application_id=client_id)
     role = auth0.authorization.get_or_create(
-        Role(name='app-viewer', applicationId=client_id))
+        Role(name="app-viewer", applicationId=client_id)
+    )
     role.add_permission(view_app)
 
     log.msg("Creating group.", name=source["app-name"])
-    group = auth0.authorization.get_or_create(Group(name=source['app-name']))
+    group = auth0.authorization.get_or_create(Group(name=source["app-name"]))
     group.add_role(role)
 
     log.msg("Done.")
 
-    return 'none', {}
+    return "none", {}
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     create_client()

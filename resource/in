@@ -3,47 +3,42 @@
 import json
 import os
 
-from moj_analytics.auth0_client import (
-    Auth0,
-    Client,
-    ManagementAPI,
-    log
-)
+from moj_analytics.auth0_client import Auth0, Client, ManagementAPI, log
 from moj_analytics.concourse import Resource
 
 
 @Resource
 def get_client(dest_dir, source={}, version=None, params={}):
-    auth0 = Auth0(
-        source['client-id'],
-        source['client-secret'],
-        source['domain'])
+    auth0 = Auth0(source["client-id"], source["client-secret"], source["domain"])
 
-    auth0.access(ManagementAPI(source['domain']))
+    auth0.access(ManagementAPI(source["domain"]))
 
     log.msg("Fetching client.", name=source["app-name"])
 
-    client = auth0.management.get(Client(name=source['app-name']))
+    client = auth0.management.get(Client(name=source["app-name"]))
 
-    with open(os.path.join(dest_dir, 'credentials.yaml'), 'w') as outfile:
+    with open(os.path.join(dest_dir, "credentials.yaml"), "w") as outfile:
         try:
             # JSON is a subset of YAML
-            json.dump({
-                'AuthProxy': {
-                    'Auth0': {
-                        'ClientId': client['client_id'],
-                        'ClientSecret': client['client_secret'],
-                        'Domain': source['domain'],
+            json.dump(
+                {
+                    "AuthProxy": {
+                        "Auth0": {
+                            "ClientId": client["client_id"],
+                            "ClientSecret": client["client_secret"],
+                            "Domain": source["domain"],
+                        },
                     },
                 },
-            }, outfile)
+                outfile,
+            )
         except Exception as ex:
             log.msg("Could not write credentials.yaml", exc_info=ex)
             raise ex
 
-    for key in ['client_id', 'client_secret']:
+    for key in ["client_id", "client_secret"]:
         path = os.path.join(dest_dir, key)
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             try:
                 f.write(client[key])
             except Exception as ex:
@@ -52,8 +47,8 @@ def get_client(dest_dir, source={}, version=None, params={}):
 
     log.msg("Done.")
 
-    return 'none', {}
+    return "none", {}
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     get_client()
