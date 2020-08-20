@@ -5,7 +5,7 @@ name: Lint, check formatting and run tests
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
 
 jobs:
