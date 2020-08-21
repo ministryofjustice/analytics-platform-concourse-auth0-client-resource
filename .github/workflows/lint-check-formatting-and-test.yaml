@@ -33,13 +33,13 @@ jobs:
       - name: Check formatting with black
         run: |
           # stop the build if the formatting is off
-          black --check resource/* moj_analytics/* tests/*
+          make check_format
 
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          flake8 resource/* moj_analytics/* tests/*  --count --show-source --statistics --ignore=E501,W503
+          make lint
 
       - name: Test with pytest
         run: |
-          pytest
+          make test
