@@ -17,6 +17,19 @@ class TestAuth0Client(object):
     @pytest.mark.usefixtures(
         "given_valid_api_client_credentials", "given_access_to_the_management_api",
     )
+    def test_it_gets_all_clients(self, auth0):
+        clients = auth0.management.get_all(Client)
+        client_names = [client["name"] for client in clients]
+
+        assert len(clients) == 100
+        assert "client1" in client_names
+        assert "client50" in client_names
+        # Return all clients, including the ones on subsequent pages
+        assert "client100" in client_names
+
+    @pytest.mark.usefixtures(
+        "given_valid_api_client_credentials", "given_access_to_the_management_api",
+    )
     def test_it_can_update_a_client(self, auth0):
         client = auth0.management.get_or_create(Client(name="test-client"))
         client.update(web_origins=["foo"])

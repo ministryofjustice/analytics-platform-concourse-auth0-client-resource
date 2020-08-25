@@ -88,6 +88,24 @@ def given_valid_api_client_credentials():
         yield
 
 
+def all_clients_callback(request):
+    """Simulating paginated responses for 100 clients"""
+
+    total = 100
+    clients = [{"name": f"client{i+1}"} for i in range(total)]
+
+    page = int(request.params.get("page", 0))
+    per_page = int(request.params.get("per_page", 50))
+    offset = per_page * page
+
+    return {
+        "clients": clients[offset : offset + per_page],
+        "total": total,
+        "start": page * per_page,
+        "limit": per_page,
+    }
+
+
 @pytest.fixture
 def given_access_to_the_management_api(auth0, config, responses):
     auth0.access(ManagementAPI(config["domain"]))
@@ -110,9 +128,7 @@ def given_access_to_the_management_api(auth0, config, responses):
         "PATCH", endpoint, json_response(lambda request: Client(**request.json))
     )
 
-    responses.add_callback(
-        "GET", endpoint, json_response(lambda request: [Client(name="client1")])
-    )
+    responses.add_callback("GET", endpoint, json_response(all_clients_callback))
 
 
 @pytest.fixture

@@ -18,7 +18,7 @@ check_format:
 
 ## lint: lint code using flake8
 lint:
-	flake8 ${CODE_PATHS} --count --show-source --statistics --ignore=E501,W503 && echo "Success"
+	flake8 ${CODE_PATHS} --count --show-source --statistics --ignore=E203,E501,W503 && echo "Success"
 
 
 ## test: run tests using pytest
