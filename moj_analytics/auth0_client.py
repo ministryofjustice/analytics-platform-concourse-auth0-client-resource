@@ -207,7 +207,10 @@ class API(object):
         result = self.get(resource)
 
         if result is None:
+            log.msg(f"{resource.__class__.__name__} not found")
             result = self.create(resource)
+        else:
+            log.msg(f"{resource.__class__.__name__} found")
 
         return result
 

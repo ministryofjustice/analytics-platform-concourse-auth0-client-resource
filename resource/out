@@ -39,6 +39,7 @@ def create_client(src_dir, source={}, params={}):
     # client.update(web_origins=[app_url])
 
     client_id = client["client_id"]
+    log.msg("Client info", client_id=client_id, client_name=client["name"])
 
     data = {}
     with open("/tmp/build/put/webapp-source/deploy.json") as input:
