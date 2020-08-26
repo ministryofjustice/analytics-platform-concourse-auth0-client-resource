@@ -5,7 +5,8 @@ from moj_analytics.auth0_client import Client, Group, Permission, Role
 
 class TestAuth0Client(object):
     @pytest.mark.usefixtures(
-        "given_valid_api_client_credentials", "given_access_to_the_management_api",
+        "given_valid_api_client_credentials",
+        "given_access_to_the_management_api",
     )
     def test_it_can_create_a_client(self, auth0):
 
@@ -15,7 +16,8 @@ class TestAuth0Client(object):
         assert client["client_secret"] == "new-client-secret"
 
     @pytest.mark.usefixtures(
-        "given_valid_api_client_credentials", "given_access_to_the_management_api",
+        "given_valid_api_client_credentials",
+        "given_access_to_the_management_api",
     )
     def test_it_gets_all_clients(self, auth0):
         clients = auth0.management.get_all(Client)
@@ -28,7 +30,8 @@ class TestAuth0Client(object):
         assert "client100" in client_names
 
     @pytest.mark.usefixtures(
-        "given_valid_api_client_credentials", "given_access_to_the_management_api",
+        "given_valid_api_client_credentials",
+        "given_access_to_the_management_api",
     )
     def test_it_can_update_a_client(self, auth0):
         client = auth0.management.get_or_create(Client(name="test-client"))
@@ -65,7 +68,8 @@ class TestAuth0Client(object):
         assert permission["description"] == "view:app"
 
     @pytest.mark.usefixtures(
-        "given_valid_api_client_credentials", "given_access_to_the_authorization_api",
+        "given_valid_api_client_credentials",
+        "given_access_to_the_authorization_api",
     )
     def test_it_can_create_a_role(self, auth0):
 

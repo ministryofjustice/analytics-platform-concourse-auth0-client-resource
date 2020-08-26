@@ -215,7 +215,8 @@ class API(object):
 class ManagementAPI(API):
     def __init__(self, domain):
         super(ManagementAPI, self).__init__(
-            "https://{domain}/api/v2/".format(domain=domain), use_pagination=True,
+            "https://{domain}/api/v2/".format(domain=domain),
+            use_pagination=True,
         )
 
 
