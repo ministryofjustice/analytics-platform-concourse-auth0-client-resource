@@ -80,12 +80,15 @@ class API(object):
 
     def request(self, method, endpoint, **kwargs):
         url = "{base_url}/{endpoint}".format(base_url=self.base_url, endpoint=endpoint)
+        params = kwargs.get("params", {})
+
         log.msg(
             "Calling endpoint.",
+            method=method,
             url=url,
+            params=params,
             base_url=self.base_url,
             endpoint=endpoint,
-            method=method,
         )
 
         request_args = {
@@ -93,7 +96,7 @@ class API(object):
                 "Content-Type": "application/json",
                 "Authorization": "Bearer {}".format(self.access_token),
             },
-            "params": kwargs.get("params", {}),
+            "params": params,
         }
 
         # Only send a payload with POST/PUT or API will respond with 5xx.
