@@ -12,6 +12,10 @@ structlog.configure(
 )
 log = structlog.get_logger()
 
+# Auth0 Management API 'per_page' parameter used for pagination
+# This is the maximum they'll allow: https://auth0.com/docs/product-lifecycle/deprecations-and-migrations/migrate-to-paginated-queries
+PER_PAGE = 50
+
 
 class AccessTokenError(Exception):
     pass
@@ -22,6 +26,10 @@ class CreateResourceError(Exception):
 
 
 class UpdateResourceError(Exception):
+    pass
+
+
+class Auth0Error(Exception):
     pass
 
 
@@ -59,20 +67,28 @@ class Auth0(object):
 
 
 class API(object):
-    def __init__(self, base_url, audience=None):
+    def __init__(self, base_url, audience=None, use_pagination=False):
         self.base_url = base_url.rstrip("/")
         self.audience = audience or base_url
+        # pagination is optional as different APIs may not support it
+        # e.g. Authorization extension API doesn't support `page`/`per_page`
+        # params and it would respond with a `400 BAD REQUEST` if these are
+        # passed.
+        self.use_pagination = use_pagination
         self.access_token = None
         self._token = None
 
     def request(self, method, endpoint, **kwargs):
         url = "{base_url}/{endpoint}".format(base_url=self.base_url, endpoint=endpoint)
+        params = kwargs.get("params", {})
+
         log.msg(
             "Calling endpoint.",
+            method=method,
             url=url,
+            params=params,
             base_url=self.base_url,
             endpoint=endpoint,
-            method=method,
         )
 
         request_args = {
@@ -80,6 +96,7 @@ class API(object):
                 "Content-Type": "application/json",
                 "Authorization": "Bearer {}".format(self.access_token),
             },
+            "params": params,
         }
 
         # Only send a payload with POST/PUT or API will respond with 5xx.
@@ -137,12 +154,47 @@ class API(object):
     def get_all(self, resource_class):
         endpoint = "{}s".format(resource_class.__name__.lower())
 
-        resources = self.request("GET", endpoint)
+        items = []
+        total = None
 
-        if endpoint in resources:
-            resources = resources[endpoint]
+        params = {}
+        if self.use_pagination:
+            params = {
+                "include_totals": "true",
+                "page": 0,
+                "per_page": PER_PAGE,
+            }
 
-        return [resource_class(self, r) for r in resources]
+        while True:
+            response = self.request("GET", endpoint, params=params)
+
+            if "total" not in response:
+                raise Auth0Error(f"get_all {endpoint}: Missing 'total' property")
+
+            if endpoint not in response:
+                raise Auth0Error(f"get_all {endpoint}: Missing '{endpoint}' property")
+
+            if total is None:
+                total = response["total"]
+
+            if total != response["total"]:
+                raise Auth0Error(f"get_all {endpoint}: Total changed")
+
+            # response will look like `{"clients": [...], "total": 42}`
+            items.extend(response[endpoint])
+
+            if not self.use_pagination:
+                break
+
+            if len(items) >= total:
+                break
+
+            if len(response[endpoint]) < 1:
+                break
+
+            params["page"] += 1
+
+        return [resource_class(self, item) for item in items]
 
     def get(self, resource):
         resources = self.get_all(resource.__class__)
@@ -155,7 +207,10 @@ class API(object):
         result = self.get(resource)
 
         if result is None:
+            log.msg(f"{resource.__class__.__name__} not found")
             result = self.create(resource)
+        else:
+            log.msg(f"{resource.__class__.__name__} found")
 
         return result
 
@@ -163,7 +218,8 @@ class API(object):
 class ManagementAPI(API):
     def __init__(self, domain):
         super(ManagementAPI, self).__init__(
-            "https://{domain}/api/v2/".format(domain=domain)
+            "https://{domain}/api/v2/".format(domain=domain),
+            use_pagination=True,
         )
 
 

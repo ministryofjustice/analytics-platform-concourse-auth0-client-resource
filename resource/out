@@ -39,6 +39,7 @@ def create_client(src_dir, source={}, params={}):
     # client.update(web_origins=[app_url])
 
     client_id = client["client_id"]
+    log.msg("Client info", client_id=client_id, client_name=client["name"])
 
     data = {}
     with open("/tmp/build/put/webapp-source/deploy.json") as input:
@@ -60,7 +61,7 @@ def create_client(src_dir, source={}, params={}):
 
     log.msg("Creating permission.", name="view:app", application_id=client_id)
     view_app = auth0.authorization.get_or_create(
-        Permission(name="view:app", application_id=client_id)
+        Permission(name="view:app", applicationId=client_id)
     )
 
     log.msg("Creating role.", name="app-viewer", application_id=client_id)
