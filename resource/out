@@ -61,7 +61,7 @@ def create_client(src_dir, source={}, params={}):
 
     log.msg("Creating permission.", name="view:app", application_id=client_id)
     view_app = auth0.authorization.get_or_create(
-        Permission(name="view:app", application_id=client_id)
+        Permission(name="view:app", applicationId=client_id)
     )
 
     log.msg("Creating role.", name="app-viewer", application_id=client_id)
